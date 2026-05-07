@@ -70,6 +70,15 @@ let dpkg_package_of_string str =
     ) lines
   );
   let candidates = Hashtbl.find_all dpkg_packages str in
+  (* Prefer an exact package name over a virtual package provider.  For
+   * example, Debian has both the real "coreutils" package and packages
+   * which "Provides: coreutils"; when the appliance asks for coreutils it
+   * needs the real package's file list, not an arbitrary provider's.
+   *)
+  let candidates =
+    let exact, providers =
+      List.partition (fun cand -> cand.name = str) candidates in
+    exact @ providers in
   (* On multiarch setups, only consider the primary architecture *)
   try
     let pkg = List.find (
